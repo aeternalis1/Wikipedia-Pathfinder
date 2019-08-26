@@ -21,15 +21,15 @@ def valid_link(title):
 		return False
 
 	data = response.json()['query']['pages']
-
+	print (data)
 	for page_id in data:
-		if data[page_id]['ns']:		# articles have namespace of 0, everything else doesn't
+		if data[page_id]['ns'] or int(page_id) <= 0:		# articles have namespace of 0, everything else doesn't
 			return False
 
 	return True
 
 
-def get_links(title):
+def get_links(title): 			# returns list of [cur_page_id, next_page_title]
 
 	params = {
 		'action': 'query',
@@ -42,20 +42,79 @@ def get_links(title):
 	response = requests.get(WIKIPEDIA_URL, params)
 
 	data = response.json()
-
-	pages = data['query']['pages']['links']
+	pages = data['query']['pages']
 
 	links = []
 
-	for k, v in pages.items():
-		for link in v['links']:
+	for page_id in pages:
+		if 'links' not in pages[page_id]:
+			continue
+		for link in pages[page_id]['links']:
 			if link['ns'] == 0:			# articles have namespace of 0
-				links.append(link['title'])
+				links.append([page_id, link['title']])	
+
+	while 'continue' in data:
+		for key in data['continue']:
+			params[key] = data['continue'][key]
+		response = requests.get(WIKIPEDIA_URL, params)
+
+		data = response.json()
+		pages = data['query']['pages']
+
+		for page_id in pages:
+			if 'links' not in pages[page_id]:
+				continue
+			for link in pages[page_id]['links']:
+				if link['ns'] == 0:			# articles have namespace of 0
+					links.append([page_id, link['title']])	
 
 	return links
 
 
+def get_page_title(page_id):
+	params = {
+		'action': 'query',
+		'format': 'json',
+		'pageids': page_id,
+		'prop': 'info',
+		'pllimit': 'max'
+	}
+
+	response = requests.get(WIKIPEDIA_URL, params)
+
+	data = response.json()['query']['pages']
+
+	for page_id in data:
+		return data[page_id]['title']
+
+
+def gen_links(title):
+
+	params = {
+		'action': 'query',
+		'titles': title,
+		'generator': 'links',
+		'format': 'json',
+		'gpllimit': 'max'
+	}
+
+	response = requests.get(WIKIPEDIA_URL, params)
+	data = response.json()
+	pages = data['query']['pages']
+
+	links = []	
+
+	for page_id in pages:	
+		if pages[page_id]['ns'] or int(page_id) <= 0:
+			continue
+		links.append([page_id, pages[page_id]['title']])
+
+	return links
+
+
+
 def get_backlinks(title):
+
 	params = {
 		'action': 'query',
 		'format': 'json',
@@ -73,4 +132,7 @@ def get_backlinks(title):
 	return [item['title'] for item in pages]
 
 
-print (get_links('King Duncan'))
+#print (len(gen_links('King Duncan|Jimmie')))
+#print (len(get_links('King Duncan|Macbeth|Mathematics')))
+#print (valid_link('Adalbert_Matkowsky'))
+#print (get_page_title('18630637'))
