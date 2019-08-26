@@ -31,6 +31,11 @@ def bfs(source, target):			# string, string
 				else:
 					backedge[links[i][1]].append(links[i][0])
 
+			for i in range(50):
+				if not queue:
+					break
+				queue.pop(0)
+
 		for i in new_queue:
 			visited[i] = 1
 		queue = new_queue
