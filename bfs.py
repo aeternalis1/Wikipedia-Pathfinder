@@ -1,52 +1,64 @@
 from query_api import *
+from database_functions import *
+from helper import get_page_title, get_page_id
 import time
+
+
+def get_edges(title):
+	try:
+		ids, names = get_database_links(title)
+		return ids, names
+	except:
+		return None, None
 
 
 def bfs(source, target):			# string, string
 	print (f"Finding path from {source} to {target}.")
 	start_time = time.time()
 
-	queue = [source]
+	source_id = get_page_id(source)
+	target_id = get_page_id(target)
 
-	visited = {source: 1}			# map string to bool, seen or not
-	backedge = {source: None}		# stores a list of pages that lead to [page]
+	queue = [[source_id, source]]
 
-	while target not in queue:
+	visited = {source_id: 1}			# map string to bool, seen or not
+	backedge = {source: None}			# stores a list of pages that lead to [page]
+
+	found = 0
+	while not found:
 
 		new_queue = []
 
 		while queue:
-			query = "|".join(queue[:min(50, len(queue))])
+			cur_id, cur_name = queue.pop(0)
 
-			try:
-				links = sorted(get_links(query))
-			except:	
-				continue		# invalid link (NEEDS CHANGING! one bad link throws out the whole batch)
-								# might need to use gen_links instead of get_links
+			page_ids, page_names = get_edges('p_' + cur_id)	# table names must start w/ letter
 
-			for i in range(len(links)):
-				if int(links[i][0]) <= 0:	# invalid id
+			if page_ids == None:
+				page_ids, page_names = gen_links(cur_id)
+				create_table('p_' + cur_id)
+				populate_table('p_' + cur_id, page_ids, page_names)
+			
+
+			for page_id, page_name in zip(page_ids, page_names):
+				if page_id in visited:
 					continue
-				if links[i][1] in visited:
-					continue
-				if links[i][1] not in backedge:
-					new_queue.append(links[i][1])
-					backedge[links[i][1]] = [links[i][0]]
+				if page_id not in backedge:
+					new_queue.append([page_id, page_name])
+					backedge[page_name] = [cur_name]
 				else:
-					backedge[links[i][1]].append(links[i][0])
-
-			for i in range(50):
-				if not queue:
-					break
-				queue.pop(0)
+					backedge[page_name].append(cur_name)
 
 		for i in new_queue:
-			visited[i] = 1
+			visited[i[0]] = 1
+			if i[0] == target_id:
+				found = 1
+
 		queue = new_queue
 
 	path = [target]
 	while backedge[target] != None:
-		page = get_page_title(backedge[target][0])
+		page = backedge[target][0]
 		path.append(page)
 		target = page
 
@@ -56,8 +68,9 @@ def bfs(source, target):			# string, string
 	return path[::-1]
 
 
-print (bfs('Algorithm', 'Donald Trump'))
-
+#print (get_edges('King_Duncans'))
+#print (bfs('Algorithm', 'Donald Trump'))
+print (bfs('King Duncan', 'Scotland'))
 
 '''
 

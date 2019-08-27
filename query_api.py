@@ -71,28 +71,12 @@ def get_links(title): 			# returns list of [cur_page_id, next_page_title]
 	return links
 
 
-def get_page_title(page_id):
+
+def gen_links(page_id):
+
 	params = {
 		'action': 'query',
-		'format': 'json',
 		'pageids': page_id,
-		'prop': 'info',
-		'pllimit': 'max'
-	}
-
-	response = requests.get(WIKIPEDIA_URL, params)
-
-	data = response.json()['query']['pages']
-
-	for page_id in data:
-		return data[page_id]['title']
-
-
-def gen_links(title):
-
-	params = {
-		'action': 'query',
-		'titles': title,
 		'generator': 'links',
 		'format': 'json',
 		'gpllimit': 'max'
@@ -102,14 +86,16 @@ def gen_links(title):
 	data = response.json()
 	pages = data['query']['pages']
 
-	links = []	
+	ids = []
+	names = []
 
 	for page_id in pages:	
 		if pages[page_id]['ns'] or int(page_id) <= 0:
 			continue
-		links.append([page_id, pages[page_id]['title']])
+		ids.append(page_id)
+		names.append(pages[page_id]['title'])
 
-	return links
+	return ids, names
 
 
 

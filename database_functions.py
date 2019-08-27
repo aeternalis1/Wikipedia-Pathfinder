@@ -25,9 +25,11 @@ def connect():
 
 def create_table(title):
 	sql = (
-		"""
-		CREATE TABLE """ + title + """ (
-			link_name VARCHAR(255) NOT NULL
+		f"""
+		CREATE TABLE {title} (
+			index SERIAL PRIMARY KEY,
+			page_id VARCHAR(255) NOT NULL,
+			page_name VARCHAR(255) NOT NULL
 		)
 		"""
         )
@@ -40,50 +42,63 @@ def create_table(title):
 		cur.close()
 		conn.commit()
 	except (Exception, psycopg2.DatabaseError) as error:
-		print (error)
+		# print (error)
+		if conn is not None:
+			conn.close()
+		raise error
 	finally:
 		if conn is not None:
 			conn.close()
 
 
-def populate_table(title, links):
-	sql = """INSERT INTO """ + title + """(link_name) VALUES(%s)"""
+def populate_table(title, ids, titles):
+	sql = f"""INSERT INTO {title}(page_id, page_name) VALUES(%s, %s)"""
 	conn = None
 	try:
 		params = config()
 		conn = psycopg2.connect(**params)
 		cur = conn.cursor()
-		cur.executemany(sql, links)
+		cur.executemany(sql, [(i, j,) for i, j in zip(ids, titles)])
 		conn.commit()
 		cur.close()
 	except (Exception, psycopg2.DatabaseError) as error:
-		print (error)
+		# print (error)
+		raise error
 	finally:
 		if conn is not None:
 			conn.close()
 
 
 def get_database_links(title):
-	sql = """SELECT link_name FROM """ + title + """ ORDER BY link_name"""
+	sql = f"""SELECT page_id, page_name FROM {title} ORDER BY index"""
 	conn = None
+	page_ids = None
+	page_names = None
 	try:
 		params = config()
 		conn = psycopg2.connect(**params)
 		cur = conn.cursor()
 		cur.execute(sql)
-		print ("The number of parts:", cur.rowcount)
+		# print ("The number of parts:", cur.rowcount)
 		rows = cur.fetchall()
-		for row in rows:
-			print (row)
+		page_ids = [row[0] for row in rows]
+		page_names = [row[1] for row in rows]
 		cur.close()
 	except (Exception, psycopg2.DatabaseError) as error:
-		print (error)
+		# print (error)
+		if conn is not None:
+			conn.close()
+		raise error
 	finally:
 		if conn is not None:
 			conn.close()
+	return page_ids, page_names
 
-
+'''
 if __name__ == '__main__':
 	#create_table('King_Duncan')
 	#populate_table('King_Duncan', [('Macbeth',), ('Shakespeare',), ('Banquo',), ('Scotland',)])
-	get_database_links('King_Duncan')
+	#get_database_links('King_Duncan')
+	create_table('p_1')
+	populate_table('p_1', ['1', '2', '3'], ['a', 'b', 'c'])
+'''
