@@ -1,7 +1,11 @@
 from query_api import *
+import time
 
 
 def bfs(source, target):			# string, string
+	print (f"Finding path from {source} to {target}.")
+	start_time = time.time()
+
 	queue = [source]
 
 	visited = {source: 1}			# map string to bool, seen or not
@@ -46,10 +50,13 @@ def bfs(source, target):			# string, string
 		path.append(page)
 		target = page
 
+	total_time = time.time()-start_time
+	print ("Completed in %.2f seconds." % total_time)
+
 	return path[::-1]
 
 
-print (bfs('Jimmie', '1964 World Series'))
+print (bfs('Algorithm', 'Donald Trump'))
 
 
 '''
