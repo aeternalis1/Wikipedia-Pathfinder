@@ -72,11 +72,11 @@ def get_links(title): 			# returns list of [cur_page_id, next_page_title]
 
 
 
-def gen_links(page_id):
+def gen_links(page):
 
 	params = {
 		'action': 'query',
-		'pageids': page_id,
+		'pageids': page,
 		'generator': 'links',
 		'format': 'json',
 		'gpllimit': 'max'
@@ -84,8 +84,10 @@ def gen_links(page_id):
 
 	response = requests.get(WIKIPEDIA_URL, params)
 	data = response.json()
-	pages = data['query']['pages']
-
+	try:
+		pages = data['query']['pages']
+	except:
+		print (data, page) 
 	ids = []
 	names = []
 

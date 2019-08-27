@@ -6,99 +6,64 @@ def connect():
 	conn = None
 	try:
 		params = config()
-		print ('Connecting to PostgreSQL database...')
 		conn = psycopg2.connect(**params)
-
 		cur = conn.cursor()
-		print ('PostgreSQL database version:')
-		cur.execute('SELECT version()')
-
-		db_version = cur.fetchone()
-		print (db_version)
+		return conn, cur
 	except (Exception, psycopg2.DatabaseError) as error:
 		print (error)
-	finally:
-		if conn is not None:
-			conn.close()
-			print ('Database connection closed.')
+		return None, None
 
 
-def create_table(title):
-	sql = (
-		f"""
-		CREATE TABLE {title} (
-			index SERIAL PRIMARY KEY,
-			page_id VARCHAR(255) NOT NULL,
-			page_name VARCHAR(255) NOT NULL
-		)
-		"""
-        )
-	conn = None
+def insert_row_links(conn, cur, page_id, links):
+	sql = f"""INSERT INTO links(page_id, page_links) VALUES(%s, %s)"""
 	try:
-		params = config()
-		conn = psycopg2.connect(**params)
-		cur = conn.cursor()
-		cur.execute(sql, (title,))
-		cur.close()
+		cur.execute(sql, (page_id, links,))
 		conn.commit()
 	except (Exception, psycopg2.DatabaseError) as error:
-		# print (error)
-		if conn is not None:
-			conn.close()
-		raise error
-	finally:
-		if conn is not None:
-			conn.close()
+		print (error)
 
 
-def populate_table(title, ids, titles):
-	sql = f"""INSERT INTO {title}(page_id, page_name) VALUES(%s, %s)"""
-	conn = None
+def insert_row_info(conn, cur, page_id, page_name):
+	sql = f"""INSERT INTO info(page_id, page_name) VALUES(%s, %s)"""
 	try:
-		params = config()
-		conn = psycopg2.connect(**params)
-		cur = conn.cursor()
-		cur.executemany(sql, [(i, j,) for i, j in zip(ids, titles)])
+		cur.execute(sql, (page_id, page_name,))
 		conn.commit()
-		cur.close()
 	except (Exception, psycopg2.DatabaseError) as error:
-		# print (error)
-		raise error
-	finally:
-		if conn is not None:
-			conn.close()
+		print (error)
 
 
-def get_database_links(title):
-	sql = f"""SELECT page_id, page_name FROM {title} ORDER BY index"""
-	conn = None
-	page_ids = None
-	page_names = None
+def get_database_links(conn, cur, page_id):
+	sql = f"""SELECT page_links FROM links WHERE page_id = '{page_id}'"""
 	try:
-		params = config()
-		conn = psycopg2.connect(**params)
-		cur = conn.cursor()
 		cur.execute(sql)
-		# print ("The number of parts:", cur.rowcount)
-		rows = cur.fetchall()
-		page_ids = [row[0] for row in rows]
-		page_names = [row[1] for row in rows]
-		cur.close()
+		links = cur.fetchone()
+		return links[0].split('|')
 	except (Exception, psycopg2.DatabaseError) as error:
-		# print (error)
-		if conn is not None:
-			conn.close()
-		raise error
-	finally:
-		if conn is not None:
-			conn.close()
-	return page_ids, page_names
+		print (error)
+		return None
+
+
+def get_database_info(conn, cur, page_id):
+	sql = f"""SELECT page_name FROM info WHERE page_id = '{page_id}'"""
+	try:
+		cur.execute(sql)
+		name = cur.fetchone()
+		return name
+	except (Exception, psycopg2.DatabaseError) as error:
+		print (error)
+		return None
+
+
+def in_table(conn, cur, table, page_id):
+	sql = f"""SELECT EXISTS(SELECT 1 FROM {table} WHERE page_id = '{page_id}')"""
+	try:
+		cur.execute(sql)
+		return cur.fetchone()[0]
+	except (Exception, psycopg2.DatabaseError) as error:
+		print (error)
+		return None
 
 '''
 if __name__ == '__main__':
-	#create_table('King_Duncan')
-	#populate_table('King_Duncan', [('Macbeth',), ('Shakespeare',), ('Banquo',), ('Scotland',)])
-	#get_database_links('King_Duncan')
-	create_table('p_1')
-	populate_table('p_1', ['1', '2', '3'], ['a', 'b', 'c'])
+
 '''

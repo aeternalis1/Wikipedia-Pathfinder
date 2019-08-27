@@ -137,8 +137,9 @@ def update_vendor(vendor_id, vendor_name):
 
 	return updated_rows
 
+
 def get_vendors():
-	sql = """SELECT vendor_id, vendor_name FROM vendors ORDER BY vendor_name"""
+	sql = """SELECT vendor_id, vendor_name FROM vendors WHERE vendor_name = '3M Corporation'"""
 	conn = None
 	try:
 		params = config()
