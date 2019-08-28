@@ -15,6 +15,11 @@ def connect():
 
 
 def insert_row_links(conn, cur, page_id, links):
+
+	'''
+	Adds new row to links table: [page_id][links]
+	'''
+
 	sql = f"""INSERT INTO links(page_id, page_links) VALUES(%s, %s)"""
 	try:
 		cur.execute(sql, (page_id, links,))
@@ -24,6 +29,11 @@ def insert_row_links(conn, cur, page_id, links):
 
 
 def insert_row_info(conn, cur, page_id, page_name):
+
+	'''
+	Adds new row to info table: [page_id][page_name]
+	'''
+
 	sql = f"""INSERT INTO info(page_id, page_name) VALUES(%s, %s)"""
 	try:
 		cur.execute(sql, (page_id, page_name,))

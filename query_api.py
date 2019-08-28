@@ -1,18 +1,28 @@
 import json
 import requests
 from bs4 import BeautifulSoup
+from helper import get_page_title
 
 
 WIKIPEDIA_URL = "https://www.wikipedia.org/w/api.php"
 
 
-def valid_link(title):
+def valid_link(page_id):
+
+	'''
+	Arguments:
+		[title] - id of page being queried
+
+	Returns:
+		[boolean] - True if page is valid, False otherwise
+	'''
 
 	params = {
 		'action': 'query',
 		'format': 'json',
-		'titles': title,
+		'pageids': page_id,
 		'prop': 'info',
+		'redirects': ''
 	}
 
 	response = requests.get(WIKIPEDIA_URL, params)
@@ -29,29 +39,42 @@ def valid_link(title):
 	return True
 
 
-def get_links(title): 			# returns list of [cur_page_id, next_page_title]
+def gen_links(page_id):
+
+	'''
+	Arguments:
+		[page_id] - id of page being queried
+
+	Returns:
+		[links] - '|' separated list of outgoing links from [title] page.
+	'''
 
 	params = {
 		'action': 'query',
+		'pageids': page_id,
+		'generator': 'links',
 		'format': 'json',
-		'titles': title,
-		'prop': 'links',
-		'pllimit': 'max'
+		'gpllimit': 'max',
+		'redirects': ''		# ignores redirect page, goes straight to main page
 	}
 
 	response = requests.get(WIKIPEDIA_URL, params)
 
 	data = response.json()
-	pages = data['query']['pages']
 
-	links = []
+	try:
+		pages = data['query']['pages']
+	except:
+		return [], []
 
-	for page_id in pages:
-		if 'links' not in pages[page_id]:
+	ids = []
+	names = []
+
+	for page_id in pages:	
+		if pages[page_id]['ns'] or int(page_id) <= 0:
 			continue
-		for link in pages[page_id]['links']:
-			if link['ns'] == 0:			# articles have namespace of 0
-				links.append([page_id, link['title']])	
+		ids.append(page_id)
+		names.append(pages[page_id]['title'])
 
 	while 'continue' in data:
 		for key in data['continue']:
@@ -62,65 +85,64 @@ def get_links(title): 			# returns list of [cur_page_id, next_page_title]
 		pages = data['query']['pages']
 
 		for page_id in pages:
-			if 'links' not in pages[page_id]:
+			if pages[page_id]['ns'] or int(page_id) <= 0:
 				continue
-			for link in pages[page_id]['links']:
-				if link['ns'] == 0:			# articles have namespace of 0
-					links.append([page_id, link['title']])	
-
-	return links
-
-
-
-def gen_links(page):
-
-	params = {
-		'action': 'query',
-		'pageids': page,
-		'generator': 'links',
-		'format': 'json',
-		'gpllimit': 'max'
-	}
-
-	response = requests.get(WIKIPEDIA_URL, params)
-	data = response.json()
-	try:
-		pages = data['query']['pages']
-	except:
-		print (data, page) 
-	ids = []
-	names = []
-
-	for page_id in pages:	
-		if pages[page_id]['ns'] or int(page_id) <= 0:
-			continue
-		ids.append(page_id)
-		names.append(pages[page_id]['title'])
+			ids.append(page_id)
+			names.append(pages[page_id]['title'])
 
 	return ids, names
 
 
 
-def get_backlinks(title):
+def get_backlinks(page_id):
 
 	params = {
 		'action': 'query',
 		'format': 'json',
-		'bltitle': title,
+		'blpageid': page_id,
 		'list': 'backlinks',
 		'bllimit': 'max'
 	}
 
 	response = requests.get(WIKIPEDIA_URL, params)
-
 	data = response.json()
-
 	pages = data['query']['backlinks']
 
-	return [item['title'] for item in pages]
+	ids = []
+	names = []
+
+	for page in pages:
+		if page['ns'] or int(page['pageid']) <= 0:
+			continue
+		ids.append(page['pageid'])
+		names.append(page['title'])
+
+	return ids, names
+
+#print (valid_link('209764'))
+#print (valid_link('57700'))
+
+'''
+ids, names = gen_links('209764') 
+
+for page_id, page_name in sorted(zip(names, ids)):
+	print (page_id, page_name)
+'''
+
+'''
+ids, names = get_backlinks('21721040')
+
+for page_id, page_name in sorted(zip(names, ids)):
+	print (page_id, page_name)
+'''
 
 
-#print (len(gen_links('King Duncan|Jimmie')))
-#print (len(get_links('King Duncan|Macbeth|Mathematics')))
-#print (valid_link('Adalbert_Matkowsky'))
-#print (get_page_title('18630637'))
+'''
+page id of 209764 (Tallahassee) redirects to 57700 (Talahassee, Florida)
+
+BUT this crap counts as an edge. So gotta make a table for redirects so they don't count
+as an edge
+
+actually, redirects always only have one 'edge', per se. just stick it in a while loop
+
+'''

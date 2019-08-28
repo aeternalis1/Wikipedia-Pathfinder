@@ -5,4 +5,4 @@ from bfs import *
 if __name__ == '__main__':
 	#create_info_table()
 	#create_links_table()
-	print ('\n'.join(bfs('Donald Trump', 'Donkey')))
+	print ('\n'.join(bfs('Minecraft', 'Wii')))

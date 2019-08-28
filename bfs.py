@@ -12,6 +12,17 @@ def get_edges(conn, cur, title):
 		return None
 
 
+def get_paths(target_id, parent):
+	paths = [[target_id]]
+	while parent[paths[0][-1]] != None:
+		new_paths = []
+		for path in paths:
+			for edge in parent[path[-1]]:
+				new_paths.append(path+[edge])
+		paths = new_paths
+	return [path[::-1] for path in paths]
+
+
 def bfs(source, target):			# string, string
 	conn, cur = connect()
 	print (f"Finding path from {source} to {target}.")
@@ -35,6 +46,11 @@ def bfs(source, target):			# string, string
 
 		while queue:
 			cur_id = queue.pop(0)
+
+			'''
+			if current page is not in the database, query the Wikipedia API and
+			dynamically add it to the database.
+			'''
 
 			if in_table(conn, cur, 'links', cur_id):
 				page_ids = get_edges(conn, cur, cur_id)
@@ -61,16 +77,21 @@ def bfs(source, target):			# string, string
 
 		queue = new_queue
 
+	'''
 	path = [target_id]
 	while backedge[target_id] != None:
 		page = backedge[target_id][0]
 		path.append(page)
 		target_id = page
-
+	'''	
 	total_time = time.time()-start_time
 	print ("Completed in %.2f seconds." % total_time)
 
-	return [get_database_info(conn, cur, page_id)[0] for page_id in path][::-1]
+	paths = get_paths(target_id, backedge)
+	count, degree = len(paths), len(paths[0])-1
+	paths = [" -> ".join([get_database_info(conn, cur, page_id)[0] for page_id in path]) for path in paths]
+
+	return ["%d paths of %d degree(s) of separation were found:" % (count, degree)] + paths
 
 
 #print (bfs('Adolf Hitler', 'Post Malone'))
