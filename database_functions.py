@@ -28,15 +28,15 @@ def insert_row_links(conn, cur, page_id, links):
 		print (error)
 
 
-def insert_row_info(conn, cur, page_id, page_name):
+def insert_row_info(conn, cur, page_id, page_name, is_redirect):
 
 	'''
 	Adds new row to info table: [page_id][page_name]
 	'''
 
-	sql = f"""INSERT INTO info(page_id, page_name) VALUES(%s, %s)"""
+	sql = f"""INSERT INTO info(page_id, page_name, is_redirect) VALUES(%s, %s, %s)"""
 	try:
-		cur.execute(sql, (page_id, page_name,))
+		cur.execute(sql, (page_id, page_name, is_redirect,))
 		conn.commit()
 	except (Exception, psycopg2.DatabaseError) as error:
 		print (error)
