@@ -102,35 +102,57 @@ def populate_info_database(conn, cur):
 	v = 0
 	while line:
 		if 'INSERT INTO' in line:
-			v = 1
-
-		if v:
 			length = len(line)
 			ind = 0
-			while ind < length:
-				if line[ind] == '(':
-
-
-		'''
-		if v:
+			while ind < length and line[ind] != '(':
+				ind += 1
 			stack = []
-			done = 1
-			for i in line:
-				if i == '(' and done:
-					stack = []
-					done = 0
-					continue
-				elif i == ')':
-					if len(("".join(stack)).split(',') == 13):
-						arr = ("".join(stack)).split(',')
-						print (arr)
-						if arr[1] != '0':	# not an article
-							continue
+			commas = 0
+			while ind < length:
+				stack.append(line[ind])
+				if line[ind] == ',':
+					commas += 1
+				if line[ind] == ')' and commas > 10:	# no way there's an article with 8+ commas and a )
+					arr = []
+					arr2 = []
+					commas = 0
+					temp = []
+
+					for i in range(1,len(stack)):
+						if stack[i] == ',':
+							arr.append("".join(temp))
+							temp = []
+						else:
+							temp.append(stack[i])
+						if len(arr) == 2:
+							left_ind = i
+							break
+
+					for i in range(len(stack)-2,-1,-1):	# count 10 commas back to title
+						if stack[i] == ',':
+							arr2.insert(0, "".join(temp))
+							temp = []
+						else:
+							temp.insert(0, stack[i])
+						if len(arr2) == 10:
+							right_ind = i
+							break
+
+					arr = arr + [''.join(stack[left_ind+1:right_ind])] + arr2
+					for i in range(len(arr)):
+						arr[i] = arr[i].strip('\'')
+
+					if arr[1] == '0':
 						insert_row_info(conn, cur, int(arr[0]), arr[2].strip('\''), int(arr[4]=='1'))
-						done = 1
-				stack.append(i)'''
+
+					ind += 1
+					stack = []
+					commas = 0
+
+				ind += 1
 
 		line = f.readline()
+
 
 
 def populate_links_database():
