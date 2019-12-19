@@ -159,8 +159,69 @@ def populate_links_database():
 	file = "c:/wikipedia/enwiki-latest-pagelinks.sql"
 
 
+	f = open(file, "r", encoding="utf8")
+	if f.mode != "r":
+		print ("Error: file not opened.")
+
+	line = f.readline()
+
+	for i in range(100):
+		if "INSERT INTO" not in line:
+			line = f.readline()
+			continue
+		ind = 0
+		length = len(line)
+		while ind < length and line[ind] != '(':
+			ind += 1
+		stack = []
+		commas = 0
+		while ind < length:
+			stack.append(line[ind])
+			if line[ind] == ',':
+				commas += 1
+			if line[ind] == ')' and commas > 2:
+				arr = []
+				arr2 = []
+				commas = 0
+				temp = []
+
+				for i in range(1,len(stack)):
+					if stack[i] == ',':
+						arr.append("".join(temp))
+						temp = []
+					else:
+						temp.append(stack[i])
+					if len(arr) == 1:
+						left_ind = i
+						break
+
+				for i in range(len(stack)-2,-1,-1):	# count 2 commas back to title
+					if stack[i] == ',':
+						arr2.insert(0, "".join(temp))
+						temp = []
+					else:
+						temp.insert(0, stack[i])
+					if len(arr2) == 2:
+						right_ind = i
+						break
+
+				arr = arr + [''.join(stack[left_ind+1:right_ind])] + arr2
+				for i in range(len(arr)):
+					arr[i] = arr[i].strip('\'')
+
+				print (arr)
+
+				ind += 1
+				stack = []
+				commas = 0
+
+			ind += 1
+
+		line = f.readline()
+
+
 
 if __name__ == '__main__':
-	#create_info_table()
+	create_info_table()
 	conn, cur = connect()
 	populate_info_database(conn, cur)
