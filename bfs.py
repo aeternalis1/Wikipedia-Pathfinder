@@ -31,7 +31,7 @@ def bfs(source, target):			# string, string
 	source_id = get_page_id(source)
 	target_id = get_page_id(target)
 
-	if not in_table(conn, cur, 'info', source_id):
+	if not in_table(conn, cur, 'info', "page_id", source_id):
 		insert_row_info(conn, cur, source_id, source)
 
 	queue = [source_id]

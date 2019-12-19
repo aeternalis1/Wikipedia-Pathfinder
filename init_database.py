@@ -1,5 +1,5 @@
 from config import config
-from database_functions import insert_row_info, insert_row_links, connect
+from database_functions import insert_row_info, insert_row_links, connect, get_database_id, add_link
 import psycopg2
 
 
@@ -155,7 +155,7 @@ def populate_info_database(conn, cur):
 
 
 
-def populate_links_database():
+def populate_links_database(conn, cur):
 	file = "c:/wikipedia/enwiki-latest-pagelinks.sql"
 
 
@@ -175,6 +175,9 @@ def populate_links_database():
 			ind += 1
 		stack = []
 		commas = 0
+		to_id = None
+		lst = None
+		links = []
 		while ind < length:
 			stack.append(line[ind])
 			if line[ind] == ',':
@@ -209,7 +212,18 @@ def populate_links_database():
 				for i in range(len(arr)):
 					arr[i] = arr[i].strip('\'')
 
-				print (arr)
+				if lst == None:
+					to_id = get_database_id(conn, cur, arr[2])
+					lst = arr[2]
+
+				if arr[1] == '0' and arr[3] == '0':
+					if arr[2] != lst:
+						if to_id != None:
+							insert_row_links(conn, cur, to_id, "|".join(links))
+						links = []
+						to_id = get_database_id(conn, cur, arr[2])
+						lst = arr[2]
+					links.append(arr[0])
 
 				ind += 1
 				stack = []
@@ -217,11 +231,16 @@ def populate_links_database():
 
 			ind += 1
 
+		if links and to_id != None:
+			insert_row_links(conn, cur, to_id, "|".join(links))
+
 		line = f.readline()
 
 
 
 if __name__ == '__main__':
-	create_info_table()
+	#create_info_table()
+	create_links_table()
 	conn, cur = connect()
-	populate_info_database(conn, cur)
+	populate_links_database(conn, cur)
+	#populate_info_database(conn, cur)

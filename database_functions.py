@@ -14,8 +14,8 @@ def connect():
 		return None, None
 
 
-def in_table(conn, cur, table, page_id):
-	sql = f"""SELECT EXISTS(SELECT 1 FROM {table} WHERE page_id = '{page_id}')"""
+def in_table(conn, cur, table, column, page_id):
+	sql = f"""SELECT EXISTS(SELECT 1 FROM {table} WHERE {column} = '{page_id}')"""
 	try:
 		cur.execute(sql)
 		return cur.fetchone()[0]
@@ -44,7 +44,7 @@ def add_link(conn, cur, page_id, link):
 	Appends new link to current string for page_id
 	'''
 
-	if not in_table(conn, cur, "links", page_id):
+	if not in_table(conn, cur, "links", "page_id", page_id):
 		sql = f"""INSERT INTO links(page_id, page_links) VALUES(%s, %s)"""
 		try:
 			cur.execute(sql, (page_id, link,))
@@ -55,7 +55,7 @@ def add_link(conn, cur, page_id, link):
 
 	sql = f"""UPDATE links SET page_links = '{link}|' || page_links WHERE page_id = '{page_id}'"""
 	try:
-		cur.execute(sql, (page_id, link,))
+		cur.execute(sql)
 		conn.commit()
 	except (Exception, psycopg2.DatabaseError) as error:
 		print (error)
@@ -88,6 +88,17 @@ def get_database_links(conn, cur, page_id):
 
 def get_database_info(conn, cur, page_id):
 	sql = f"""SELECT page_name FROM info WHERE page_id = '{page_id}'"""
+	try:
+		cur.execute(sql)
+		name = cur.fetchone()
+		return name
+	except (Exception, psycopg2.DatabaseError) as error:
+		print (error)
+		return None
+
+
+def get_database_id(conn, cur, page_name):
+	sql = f"""SELECT page_id FROM info WHERE page_name = '{page_name}'"""
 	try:
 		cur.execute(sql)
 		name = cur.fetchone()
